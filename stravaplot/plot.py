@@ -1,11 +1,11 @@
-from math import sqrt
+from math import log, pi, sqrt, tan
 from os import listdir
-from os.path import isdir, isfile, join, split
+from os.path import isdir, isfile, join
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import colors
 import gpxpy
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import colors
 
 from .terrain import terrain
 
@@ -76,6 +76,10 @@ class plot:
         ax.set_axis_off()
         self.fig.add_axes(ax)
 
+        # Dummy, unit values
+        map_width = 1
+        map_height = 1
+
         for f in self.strava_data:
             with open(f) as gpx_file:
                 gpx = gpxpy.parse(gpx_file)
@@ -84,8 +88,18 @@ class plot:
                     lon = []
                     for segment in track.segments:
                         for point in segment.points:
-                            lat.append(point.latitude)
-                            lon.append(point.longitude)
+                            # get x value
+                            x = (point.longitude + 180) * (map_width / 360)
+
+                            # convert from degrees to radians
+                            lat_rad = point.latitude * pi / 180
+
+                            # get y value
+                            merc_n = log(tan((pi / 4) + (lat_rad / 2)))
+                            y = (map_height / 2) + (map_width * merc_n / (2 * pi))
+
+                            lat.append(y)
+                            lon.append(x)
                     lat,lon = _deline(lat,lon,self.threshold)
                     ax.plot(lon,lat,color=self.linecolor,lw=self.linewidth,alpha=self.linealpha)
 
@@ -182,4 +196,3 @@ def _deline(lat, lon,threshold):
     else:
         print("Cannot deline data, lists must be same length")
         return lat, lon
-
